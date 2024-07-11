@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.postgres.search import SearchVectorField
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.core.validators import MinValueValidator, URLValidator, EmailValidator, MinLengthValidator
@@ -121,14 +122,6 @@ class Hero(models.Model, RechargeEnergyMixin):
     hero_title = models.CharField(max_length=100)
     energy = models.PositiveIntegerField()
 
-    def save(self, *args, **kwargs):
-        if self.energy < 1:
-            self.energy = 1
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.name} - ({self.hero_title})"
-
 
 class SpiderHero(Hero):
     class Meta:
@@ -138,10 +131,7 @@ class SpiderHero(Hero):
         if self.energy < 80:
             return f"{self.name} as Spider Hero is out of web shooter fluid"
 
-        self.energy -= 80
-        if self.energy == 0:
-            self.energy = 1
-
+        self.energy = max(1, self.energy - 80)
         self.save()
 
         return f"{self.name} as Spider Hero swings from buildings using web shooters"
@@ -155,10 +145,21 @@ class FlashHero(Hero):
         if self.energy < 65:
             return f"{self.name} as Flash Hero needs to recharge the speed force"
 
-        self.energy -= 65
-        if self.energy == 0:
-            self.energy = 1
-
+        self.energy = max(1, self.energy - 65)
         self.save()
 
         return f"{self.name} as Flash Hero runs at lightning speed, saving the day"
+
+
+# 05. Search Vector
+class Document(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=['search_vector']),
+        ]
+
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    search_vector = SearchVectorField(
+        null=True,
+    )
