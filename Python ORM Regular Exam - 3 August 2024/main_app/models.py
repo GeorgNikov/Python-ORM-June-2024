@@ -110,5 +110,3 @@ class Mission(Base, LaunchedMixin):
         blank=True,
         related_name='commanded_missions'
     )
-
-    test = models
